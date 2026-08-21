@@ -1,0 +1,103 @@
+<resources>
+    <string name="app_name">cDumpDex</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">主页</string>
+    <string name="nav_settings">设置</string>
+    <string name="nav_about">关于</string>
+
+    <!-- Home Fragment -->
+    <string name="search_hint">搜索应用</string>
+    <string name="no_apps_found">未找到应用</string>
+    <string name="loading_apps">正在加载应用列表...</string>
+
+    <!-- App Actions -->
+    <string name="action_open">打开</string>
+    <string name="action_app_info">应用信息</string>
+    <string name="action_extract">提取应用</string>
+
+    <!-- App Info Dialog -->
+    <string name="app_info_title">应用信息</string>
+    <string name="app_info_package_name">包名</string>
+    <string name="app_info_version">版本</string>
+    <string name="app_info_data_dir">数据目录</string>
+    <string name="app_info_source_dir">安装路径</string>
+    <string name="app_info_uid">UID</string>
+    <string name="app_info_target_sdk">目标SDK</string>
+    <string name="app_info_min_sdk">最低SDK</string>
+    <string name="app_info_permissions">权限</string>
+
+    <!-- Extract App -->
+    <string name="extract_title">提取应用</string>
+    <string name="extract_select_path">选择保存路径</string>
+    <string name="extract_success">提取成功</string>
+    <string name="extract_failed">提取失败</string>
+    <string name="extract_path_copied">路径已复制到剪贴板</string>
+
+    <!-- Directory Picker -->
+    <string name="dir_picker_title">选择目录</string>
+    <string name="dir_picker_select">选择此目录</string>
+    <string name="dir_picker_cancel">取消</string>
+
+    <!-- Settings Fragment -->
+    <string name="settings_permission">获取App权限</string>
+    <string name="settings_permission_desc">配置向宿主应用写入配置的方式</string>
+    <string name="settings_unshell_mode">切换脱壳模式</string>
+    <string name="settings_unshell_mode_desc">选择脱壳方式</string>
+
+    <!-- Permission Methods -->
+    <string name="permission_shizuku">Shizuku</string>
+    <string name="permission_root">Root</string>
+    <string name="permission_shizuku_desc">通过Shizuku写入配置（推荐）</string>
+    <string name="permission_root_desc">通过Root权限写入配置</string>
+    <string name="shizuku_not_running">Shizuku未运行</string>
+    <string name="shizuku_permission_denied">Shizuku权限被拒绝</string>
+    <string name="root_not_available">Root权限不可用</string>
+
+    <!-- Unshell Modes -->
+    <string name="unshell_mode_fixed">固定结构映射</string>
+    <string name="unshell_mode_memory_scan">内存特征匹配</string>
+    <string name="unshell_mode_loadclass_hook">LoadClass Hook</string>
+    <string name="unshell_mode_root_memory">Root内存扫描</string>
+    <string name="unshell_mode_fixed_desc">通过DexFile结构获取DEX地址（默认）</string>
+    <string name="unshell_mode_memory_scan_desc">暴力扫描内存中的DEX特征</string>
+    <string name="unshell_mode_loadclass_hook_desc">Hook ClassLinker::LoadClass获取DEX</string>
+    <string name="unshell_mode_root_memory_desc">通过Root权限直接读取目标进程内存dump DEX（无需Xposed注入）</string>
+
+    <!-- Floating window -->
+    <string name="floating_window_toggle">显示悬浮窗</string>
+    <string name="floating_window_desc">Root内存扫描模式下显示悬浮窗，点击可选择运行中的进程进行脱壳</string>
+    <string name="overlay_permission_required">需要悬浮窗权限，请前往设置授权</string>
+
+    <!-- Active Load Class -->
+    <string name="settings_active_load">开启主动调用</string>
+    <string name="settings_active_load_desc">仅在 Xposed 模式下解析类并触发加载，Java/C 二选一</string>
+    <string name="active_load_enabled">已启用</string>
+    <string name="active_load_disabled">已禁用</string>
+    <string name="active_load_mode_off">关闭主动调用</string>
+    <string name="active_load_mode_java">Java解析类并触发加载</string>
+    <string name="active_load_mode_c">C解析类并触发加载</string>
+    <string name="active_load_none_selected">未选择任何主动调用模式</string>
+    <string name="active_load_saved">主动调用模式已保存</string>
+    <string name="active_load_invalid_combo">无效的模式组合</string>
+
+    <!-- Root Inject -->
+
+    <!-- About Fragment -->
+    <string name="about_author">作者</string>
+    <string name="about_qq">QQ</string>
+    <string name="about_version">版本</string>
+    <string name="about_github">GitHub</string>
+    <string name="about_click_to_chat">点击打开QQ聊天</string>
+
+    <!-- Common -->
+    <string name="confirm">确认</string>
+    <string name="cancel">取消</string>
+    <string name="close">关闭</string>
+    <string name="success">成功</string>
+    <string name="failed">失败</string>
+    <string name="loading">加载中...</string>
+    <string name="error">错误</string>
+    <string name="warning">警告</string>
+    <string name="info">信息</string>
+</resources>
