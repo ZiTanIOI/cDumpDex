@@ -1,0 +1,48 @@
+# Gradle and Android build output
+.gradle/
+**/build/
+captures/
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+
+# Native build caches
+.cxx/
+.externalNativeBuild/
+
+# Generated packages and native binaries
+*.apk
+*.aab
+*.ap_
+*.so
+*.o
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+
+# Local tool settings
+.claude/settings.local.json
+.codex/
+.agents/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Analysis reference (ART sources, device artifacts)
+analysis/
+
+# Local dev notes (never commit)
+docs/DEVELOPMENT_NOTES.md
+
+# Keystore / signing keys (never commit)
+*.jks
+*.keystore
+
+# Local signing properties (contains passwords, never commit)
+keystore.properties

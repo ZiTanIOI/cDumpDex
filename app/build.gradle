@@ -1,0 +1,202 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+android {
+    namespace 'com.zitan.cdumpdex'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.zitan.cdumpdex"
+        minSdk 24
+        targetSdk 35
+        versionCode 5
+        versionName "1.2.2"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+                cppFlags ''
+            }
+        }
+        ndk {
+            // 只支持 ARM 架构
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
+    }
+
+    // 签名配置: 从 keystore.properties 读取(该文件已 gitignore, 不入库)
+    def keystorePropertiesFile = rootProject.file("keystore.properties")
+    def keystoreProperties = new Properties()
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // 有 keystore.properties 用正式签名(zitan.jks), 否则退回 debug 签名
+            signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+            version '3.22.1'
+        }
+    }
+    viewBinding {
+        enabled = true
+    }
+    // 启用 AIDL
+    buildFeatures {
+        aidl true
+    }
+}
+
+dependencies {
+
+    implementation libs.appcompat
+    implementation libs.material
+    implementation libs.activity
+    implementation libs.constraintlayout
+    implementation libs.hiddenapibypass
+    // smali 编译器升级到 3.0.9(maven 最新发布版; 3.0.10 仅有 GitHub 源码, 未发 maven)。
+    // 3.x 包名: com.android.tools.smali.*, 依赖(antlr-runtime/jcommander/stringtemplate/guava)
+    // 由 gradle 从阿里云镜像自动拉取。
+    // baksmali/dexlib2(org.jf.*) 保持 2.5.2-dev: baksmali 3.x 未发布 maven, 且反编译功能正常。
+    // 两套 dexlib2 包名不同(org.jf.dexlib2 / com.android.tools.smali.dexlib2), 可共存。
+    implementation 'com.android.tools.smali:smali:3.0.9'
+    implementation files('libs/baksmali-2.5.2-dev.jar')
+    implementation files('libs/dexlib2-2.5.2-dev.jar')
+    implementation files('libs/util-2.5.2.jar')
+    implementation libs.dexkit
+
+    // Fragment
+    implementation 'androidx.fragment:fragment:1.6.2'
+    // RecyclerView
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    // SwipeRefreshLayout
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    // CardView
+    implementation 'androidx.cardview:cardview:1.0.0'
+    // Glide for image loading
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
+    // Shizuku
+    implementation 'dev.rikka.shizuku:api:13.1.5'
+    implementation 'dev.rikka.shizuku:provider:13.1.5'
+    // Gson
+    implementation 'com.google.code.gson:gson:2.10.1'
+    // OkHttp
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+
+    // jadx for Java decompilation - exclude conflicting smali/baksmali
+    // 注: 用 1.4.7(Java 8 编译, Android 原生兼容)。1.5.0 是 Java 11 + 插件化(SPI/Kotlin),
+    //     在 Android 上无法解析 dex(getClasses() 恒为 0)。1.4.7 内置 dex 解析且依赖 org.jf:baksmali:2.5.2,
+    //     与 libs 的 baksmali-2.5.2-dev.jar 同版本线, 排除 maven 传递避免重复类。
+    implementation('io.github.skylot:jadx-core:1.4.7') {
+        exclude group: 'org.smali', module: 'baksmali'
+    }
+    implementation('io.github.skylot:jadx-dex-input:1.4.7') {
+        exclude group: 'org.smali', module: 'baksmali'
+    }
+    compileOnly files('libs/cth.jar')
+    compileOnly files('libs/ActivityThread.jar')
+    compileOnly files('libs/XposedBridgeAPI-82.jar')
+    testImplementation libs.junit
+    androidTestImplementation libs.ext.junit
+    androidTestImplementation libs.espresso.core
+}
+
+// ============================================================
+// Task: Copy rootdump native executable to assets after CMake build
+// The binary is built as a static executable, then copied into APK assets
+// for runtime extraction and execution via root shell.
+// ============================================================
+
+def copyRootDumpForVariant(variantName) {
+    return tasks.register("copyRootDump${variantName}") {
+        group = 'rootdump'
+        description = "Copy rootdump native executable to assets for ${variantName}"
+
+        doLast {
+            def abis = ['arm64-v8a', 'armeabi-v7a']
+            abis.each { abi ->
+                // Search in the cxx build output directory (hash-based subdirectory)
+                def cxxDir = layout.buildDirectory.dir(
+                    "intermediates/cxx/${variantName.toLowerCase()}"
+                ).get().asFile
+                def rootdumpFile = null
+                if (cxxDir.exists()) {
+                    cxxDir.eachDir { hashDir ->
+                        def candidate = new File(new File(hashDir, 'obj'), "${abi}/rootdump")
+                        if (candidate.exists()) {
+                            rootdumpFile = candidate
+                        }
+                    }
+                }
+                if (rootdumpFile == null) {
+                    def cmakeObjDir = layout.buildDirectory.dir(
+                        "intermediates/cmake/${variantName.toLowerCase()}/obj/${abi}"
+                    ).get().asFile
+                    def candidate = new File(cmakeObjDir, 'rootdump')
+                    if (candidate.exists()) {
+                        rootdumpFile = candidate
+                    }
+                }
+
+                def assetsDir = file('src/main/assets')
+                if (!assetsDir.exists()) {
+                    assetsDir.mkdirs()
+                }
+
+                def destFile = new File(assetsDir, "rootdump_${abi}")
+                if (rootdumpFile != null && rootdumpFile.exists()) {
+                    destFile.bytes = rootdumpFile.bytes
+                    destFile.setExecutable(true, false)
+                    logger.lifecycle("Copied rootdump (${abi}) to assets/ (${rootdumpFile.length()} bytes)")
+                } else {
+                    logger.warn("rootdump binary not found for ${abi}")
+                }
+            }
+        }
+    }
+}
+
+def copyRootDumpDebug = copyRootDumpForVariant('Debug')
+def copyRootDumpRelease = copyRootDumpForVariant('Release')
+
+// Ensure copy runs AFTER native build completes
+tasks.whenTaskAdded { task ->
+    // Make copy task depend on the cmake build for each ABI
+    if (task.name.startsWith('buildCMakeDebug[')) {
+        copyRootDumpDebug.configure { dependsOn(task) }
+    }
+    if (task.name.startsWith('buildCMakeRelease[')) {
+        copyRootDumpRelease.configure { dependsOn(task) }
+    }
+    // And merge assets depends on copy
+    if (task.name == 'mergeDebugAssets') {
+        task.dependsOn copyRootDumpDebug
+    }
+    if (task.name == 'mergeReleaseAssets') {
+        task.dependsOn copyRootDumpRelease
+    }
+}
